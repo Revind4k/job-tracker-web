@@ -8,6 +8,7 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES ? "/job-tracker-web/" : "/",
   test: {
     environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"], // e2e/ belongs to Playwright
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,
   },
