@@ -1,0 +1,62 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    # Real browser against the real Spring Boot API and PostgreSQL: no mocks.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_USER: jt, POSTGRES_PASSWORD: jt, POSTGRES_DB: jobtracker }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U jt" --health-interval 2s --health-retries 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with: { repository: Revind4k/job-tracker-api, path: api }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - name: Start the API
+        working-directory: api
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/jobtracker
+          DB_USER: jt
+          DB_PASSWORD: jt
+          JWT_SECRET: ci-only-secret-0123456789abcdef0123456789
+          REDIS_ENABLED: "false"
+          CACHE_TYPE: simple
+          CORS_ORIGINS: http://localhost:4173
+        run: |
+          ./gradlew --no-daemon -q bootJar -x test
+          nohup java -jar build/libs/job-tracker-api-0.0.1-SNAPSHOT.jar > ../api.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf localhost:8080/actuator/health && exit 0; sleep 1; done
+          cat ../api.log; exit 1
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - if: failure()
+        run: tail -100 api.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            playwright-report/
+            e2e/screenshots/
