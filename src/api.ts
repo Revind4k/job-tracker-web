@@ -105,6 +105,15 @@ export const api = {
   update: (id: number, patch: Partial<ApplicationInput>) => request<Application>("PATCH", `/applications/${id}`, patch),
   remove: (id: number) => request<void>("DELETE", `/applications/${id}`),
   stats: () => request<Stats>("GET", "/applications/stats"),
+  /** Every application matching the filter. The server caps a page at 100, so this walks the pages. */
+  listAll: async (status?: Status) => {
+    const all: Application[] = [];
+    for (let page = 0; ; page++) {
+      const p = await api.list({ status, page, size: 100 });
+      all.push(...p.items);
+      if (p.items.length === 0 || all.length >= p.total) return all;
+    }
+  },
 };
 
 /**

@@ -75,7 +75,7 @@ export const handlers = [
     const uid = userOf(request);
     if (uid === null) return unauthorized();
     const q = new URL(request.url).searchParams;
-    const page = Number(q.get("page") ?? 0), size = Number(q.get("size") ?? 20), status = q.get("status");
+    const page = Number(q.get("page") ?? 0), size = Math.min(100, Math.max(1, Number(q.get("size") ?? 20))), status = q.get("status");
     const mine = state.apps
       .filter((a) => a.userId === uid && (!status || a.status === status))
       .sort((a, b) => b.appliedOn.localeCompare(a.appliedOn) || b.id - a.id);

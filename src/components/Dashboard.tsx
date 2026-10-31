@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError, STATUSES, type Application, type ApplicationInput, type Page, type Stats, type Status } from "../api";
+import { csvFilename, toCsv } from "../csv";
 import { LABEL } from "../format";
 import { ApplicationForm } from "./ApplicationForm";
 import { StatsPanel } from "./StatsPanel";
@@ -13,6 +14,7 @@ export function Dashboard({ email, onLogout }: { email: string; onLogout: () => 
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Application | "new" | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [version, setVersion] = useState(0); // bumped after every write to refetch
   const load = () => setVersion((v) => v + 1);
 
@@ -65,6 +67,21 @@ export function Dashboard({ email, onLogout }: { email: string; onLogout: () => 
     load();
   }
 
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const apps = await api.listAll(filter ?? undefined);
+      const url = URL.createObjectURL(new Blob([toCsv(apps)], { type: "text/csv;charset=utf-8" }));
+      const a = Object.assign(document.createElement("a"), { href: url, download: csvFilename(filter) });
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(`Couldn't export: ${(e as Error).message}`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   return (
     <div className="app">
@@ -98,7 +115,12 @@ export function Dashboard({ email, onLogout }: { email: string; onLogout: () => 
               </button>
             ))}
           </div>
-          <button className="primary" onClick={() => setEditing("new")}>+ Add application</button>
+          <div className="toolbar-actions">
+            <button onClick={exportCsv} disabled={exporting || !data?.total}>
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+            <button className="primary" onClick={() => setEditing("new")}>+ Add application</button>
+          </div>
         </div>
 
         {!data ? (

@@ -48,6 +48,7 @@ label { display: block; margin-bottom: 12px; font-size: .9rem; }
 .bar { flex: 1; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; position: relative; }
 .bar span { position: absolute; top: -17px; width: 100%; text-align: center; font-size: .7rem; color: var(--muted); }
 .toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar-actions { display: flex; gap: 8px; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { border-radius: 999px; padding: 4px 12px; font-size: .85rem; }
 .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -74,5 +75,6 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .big { font-size: 1.5rem; }
   td, th { padding: 8px 4px; }
   .act { flex-direction: column; align-items: flex-end; }
-  .toolbar .primary { width: 100%; }
+  .toolbar-actions { width: 100%; }
+  .toolbar-actions button { flex: 1; }
 }

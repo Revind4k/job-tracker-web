@@ -14,6 +14,7 @@ The React + TypeScript front end for [job-tracker-api](https://github.com/Revind
   - Filter chips with counts, and pagination.
   - Add and edit in a native `<dialog>`, which gives focus trapping and Escape handling for free.
   - Delete asks for confirmation first.
+  - **Export CSV** downloads every application in the current filter, not just the page on screen. The API caps a page at 100, so the export walks the pages until it has the total. Cells that start with `=`, `+`, `-` or `@` get a leading apostrophe so a spreadsheet can't run them as formulas (CSV injection), and the file has a UTF-8 BOM so Excel shows accented company names correctly.
   - Validation runs in the browser and shows the server's per-field errors too.
 - **Optimistic status changes.** The new status shows immediately and rolls back with an error message if the server refuses.
 - **No stale overwrites.** Each list request is tagged, and a response that arrives after a newer request started is dropped. Clicking two filters quickly can't let the slower, older response win. There's a test that fails without this guard.
@@ -24,10 +25,10 @@ The React + TypeScript front end for [job-tracker-api](https://github.com/Revind
 
 | Layer | What | Count |
 |---|---|---|
-| Unit + component (Vitest, Testing Library) | API client errors (validation, 429 `Retry-After`, network, 401), cold-start polling with fake timers, JWT parsing, week bucketing, and full UI flows: register, CRUD, validation, optimistic rollback, filters, demo seeding, session expiry, and the stale-response race | 21 |
+| Unit + component (Vitest, Testing Library) | API client errors (validation, 429 `Retry-After`, network, 401), cold-start polling with fake timers, JWT parsing, week bucketing, and full UI flows: register, CRUD, validation, optimistic rollback, filters, demo seeding, session expiry, the stale-response race, and CSV export (quoting, formula defusing, 230 rows across three pages, filtered export) | 27 |
 | End to end (Playwright, desktop + Pixel 7) | **A real browser against the real Spring Boot API and PostgreSQL**: register, add with a link, change status, reload and keep the data, delete, wrong password, the demo flow, server-side validation, and no horizontal overflow | 6 |
 
-The component tests run against an in-memory fake of the API built with [MSW](https://mswjs.io). It isn't a stub per test: it enforces the same contract as the real server (JWT auth, per-user isolation, validation errors, stats), so the UI is exercised through real `fetch` calls. CI then runs the end-to-end suite against the actual backend. It checks out `job-tracker-api`, starts it on a Postgres service container, and drives the built site in Chromium.
+The component tests run against an in-memory fake of the API built with [MSW](https://mswjs.io). It isn't a stub per test: it enforces the same contract as the real server (JWT auth, per-user isolation, validation errors, stats, the 100-row page cap), so the UI is exercised through real `fetch` calls. CI then runs the end-to-end suite against the actual backend. It checks out `job-tracker-api`, starts it on a Postgres service container, and drives the built site in Chromium.
 
 ```bash
 npm ci
